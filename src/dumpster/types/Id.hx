@@ -2,40 +2,46 @@ package dumpster.types;
 
 using StringTools;
 
+#if tink_json
+import tink.json.Representation;
+#end
+
 abstract Id<A>(String) {
-  
-  static inline var EXT = '.dump.json';
-  
-  inline function new(s) this = s;
+	static inline var EXT = '.dump.json';
 
-  @:to public function toString() 
-    return this.urlDecode();
-  
-  public function toFileName()
-    return '$this.dump.json';
+	inline function new(s)
+		this = s;
 
-  static public function fromFileName(s:String)
-    return 
-      if (s.endsWith(EXT))
-        Some(new Id(s.substr(0, s.length - EXT.length)));
-      else
-        None;
+	@:to public function toString()
+		return this.urlDecode();
 
-  @:from static public function ofString<T>(s:String):Id<T> {
-    var ret = new StringBuf(),
-        s = haxe.io.Bytes.ofString(s);
-        
-    var bytes = s.getData();
-    for (i in 0...s.length) {
-      var c = haxe.io.Bytes.fastGet(bytes, i);
-      if (c >= 'a'.code && c <= 'z'.code || c >= 'A'.code && c <= 'Z'.code || c >= '0'.code && c <= '9'.code)
-        ret.addChar(c);
-      else {
-        ret.addChar('_'.code);
-        ret.add(i.hex(2));
-      }
-    }
-    return new Id(ret.toString());
-  }
+	public function toFileName()
+		return '$this.dump.json';
 
+	#if tink_json
+	@:to function toRepresentation():Representation<String>
+		return new Representation(this);
+
+	@:from static function ofRepresentation(rep:Representation<String>)
+		return new Id(rep.get());
+	#end
+
+	static public function fromFileName(s:String)
+		return if (s.endsWith(EXT)) Some(new Id(s.substr(0, s.length - EXT.length))); else None;
+
+	@:from static public function ofString<T>(s:String):Id<T> {
+		var ret = new StringBuf(), s = haxe.io.Bytes.ofString(s);
+
+		var bytes = s.getData();
+		for (i in 0...s.length) {
+			var c = haxe.io.Bytes.fastGet(bytes, i);
+			if (c >= 'a'.code && c <= 'z'.code || c >= 'A'.code && c <= 'Z'.code || c >= '0'.code && c <= '9'.code)
+				ret.addChar(c);
+			else {
+				ret.addChar('_'.code);
+				ret.add(i.hex(2));
+			}
+		}
+		return new Id(ret.toString());
+	}
 }
